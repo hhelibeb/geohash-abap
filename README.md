@@ -18,3 +18,8 @@ Default value of i_length is 8.
         e_longitude = data(longitude)
         e_latitude  = data(latitude)
     ).
+## TODO
+* Get neighbors.
+* Unit testing.
+* Distance.
+* Hash validation.
