@@ -10,16 +10,15 @@ class zcl_geohash definition
 
     constants c_max_hash_length type i value 12 ##NO_TEXT.
 
-    methods constructor .
     class-methods class_constructor .
-    class-methods encode_geo_hash
+    class-methods encode
       importing
         !i_longitude      type ty_tude
         !i_latitude       type ty_tude
         !i_length         type i default 8
       returning
         value(r_geo_hash) type string .
-    class-methods decode_geo_hash
+    class-methods decode
       importing
         !i_geo_hash  type string
       exporting
@@ -159,11 +158,7 @@ CLASS ZCL_GEOHASH IMPLEMENTATION.
   endmethod.
 
 
-  method constructor.
-  endmethod.
-
-
-  method decode_geo_hash.
+  method decode.
 
     types: numc5 type n length 5.
 
@@ -283,7 +278,7 @@ CLASS ZCL_GEOHASH IMPLEMENTATION.
   endmethod.
 
 
-  method encode_geo_hash.
+  method encode.
 
     if i_length < 1.
       return.
