@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <abapGit version="v1.0.0" serializer="LCL_OBJECT_CLAS" serializer_version="v1.0.0">
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
@@ -15,14 +15,14 @@
     <SEOCOMPOTX>
      <CLSNAME>ZCL_GEOHASH</CLSNAME>
      <CMPNAME>CLASS_CONSTRUCTOR</CMPNAME>
-     <LANGU>E</LANGU>
+     <LANGU>1</LANGU>
      <DESCRIPT>CLASS_CONSTRUCTOR</DESCRIPT>
     </SEOCOMPOTX>
     <SEOCOMPOTX>
      <CLSNAME>ZCL_GEOHASH</CLSNAME>
-     <CMPNAME>CONSTRUCTOR</CMPNAME>
+     <CMPNAME>CLASS_CONSTRUCTOR</CMPNAME>
      <LANGU>E</LANGU>
-     <DESCRIPT>CONSTRUCTOR</DESCRIPT>
+     <DESCRIPT>CLASS_CONSTRUCTOR</DESCRIPT>
     </SEOCOMPOTX>
    </DESCRIPTIONS>
   </asx:values>
