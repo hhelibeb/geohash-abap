@@ -24,7 +24,7 @@ class zcl_geohash definition
       exporting
         !e_longitude type ty_tude
         !e_latitude  type ty_tude .
-  protected section.
+
   private section.
 
     types:
@@ -84,11 +84,11 @@ class zcl_geohash definition
                                                i_member       type string
                                      returning value(r_table) type ty_code_t.
 
-ENDCLASS.
+endclass.
 
 
 
-CLASS ZCL_GEOHASH IMPLEMENTATION.
+class zcl_geohash implementation.
 
 
   method bin_to_dec.
@@ -384,4 +384,5 @@ CLASS ZCL_GEOHASH IMPLEMENTATION.
     endif.
 
   endmethod.
-ENDCLASS.
+  
+endclass.
