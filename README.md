@@ -26,3 +26,5 @@ Default value of length is 8.
 - [ ] Unit testing.
 - [ ] Distance.
 - [ ] Hash validation.
+- [ ] Class split.
+
