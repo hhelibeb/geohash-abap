@@ -1,5 +1,6 @@
 # geohash-abap
 Geohash utitlies in ABAP
+
 ABAP Version: 740 or higher
 
 ## Encoding
