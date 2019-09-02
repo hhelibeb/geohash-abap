@@ -14,7 +14,7 @@ Default value of length is 8.
 ## Decoding
     zcl_geohash=>decode(
       exporting
-        geohash   = hash
+        geohash   = 'wtj3cper'
       importing
         longitude = data(longitude)
         latitude  = data(latitude)
