@@ -5,6 +5,12 @@ class zcl_geohash definition
 
   public section.
 
+
+    types: begin of ty_hash,
+             hash type string,
+           end of ty_hash.
+    types: ty_hash_t type standard table of ty_hash with empty key.
+
     types:
       ty_tude type p length 16 decimals 12 .
 
@@ -13,18 +19,22 @@ class zcl_geohash definition
     class-methods class_constructor .
     class-methods encode
       importing
-        !i_longitude      type ty_tude
-        !i_latitude       type ty_tude
-        !i_length         type i default 8
+        !longitude        type ty_tude
+        !latitude         type ty_tude
+        !length           type i default 8
       returning
         value(r_geo_hash) type string .
     class-methods decode
       importing
-        !i_geo_hash  type string
+        !geohash   type string
       exporting
-        !e_longitude type ty_tude
-        !e_latitude  type ty_tude .
+        !longitude type ty_tude
+        !latitude  type ty_tude .
 
+    class-methods neighbors importing geohash          type string
+                            returning value(neighbors) type ty_hash_t.
+
+*  protected section.
   private section.
 
     types:
@@ -37,13 +47,32 @@ class zcl_geohash definition
     types:
       ty_base32_t2 type hashed table of ty_base32 with unique key base32 .
 
-    types: begin of ty_code,
-             code type string,
-           end of ty_code.
-    types: ty_code_t type standard table of ty_code with empty key.
+    types: begin of ty_neighbors_odd,
+             f1 type string,
+             f2 type string,
+             f3 type string,
+             f4 type string,
+             f5 type string,
+             f6 type string,
+             f7 type string,
+             f8 type string,
+           end of ty_neighbors_odd.
+    types: ty_neighbors_odd_t type standard table of ty_neighbors_odd with empty key.
+
+    types: begin of ty_neighbors_even,
+             f1 type string,
+             f2 type string,
+             f3 type string,
+             f4 type string,
+           end of ty_neighbors_even.
+    types: ty_neighbors_even_t type standard table of ty_neighbors_even with empty key.
 
     class-data mt_base32_code1 type ty_base32_t1 .
     class-data mt_base32_code2 type ty_base32_t2 .
+
+    class-data mt_neighbors_odd type ty_neighbors_odd_t.
+    class-data mt_neighbors_even type ty_neighbors_even_t.
+
     constants c_longitude_min type ty_tude value '-180.00' ##NO_TEXT.
     constants c_longitude_max type ty_tude value '180.00' ##NO_TEXT.
     constants c_latitude_min type ty_tude value '-90.00' ##NO_TEXT.
@@ -80,9 +109,14 @@ class zcl_geohash definition
         !e_left  type ty_tude
         !e_right type ty_tude
         !e_tude  type ty_tude .
+
+    class-methods: get_index importing index          type i
+                                       offset         type i
+                                       max_index      type i
+                             returning value(r_index) type i.
     class-methods: get_code_neighbor importing i_table        type standard table
                                                i_member       type string
-                                     returning value(r_table) type ty_code_t.
+                                     returning value(r_table) type ty_hash_t.
 
 endclass.
 
@@ -155,6 +189,24 @@ class zcl_geohash implementation.
 
     mt_base32_code2 = mt_base32_code1.
 
+    mt_neighbors_odd = value #(
+     (  f1 = 'b' f2 = 'c' f3 = 'f' f4 = 'g' f5 = 'u' f6 = 'v' f7 = 'y' f8 = 'z' )
+     (  f1 = '8' f2 = '9' f3 = 'd' f4 = 'e' f5 = 's' f6 = 't' f7 = 'w' f8 = 'x' )
+     (  f1 = '2' f2 = '3' f3 = '6' f4 = '7' f5 = 'k' f6 = 'm' f7 = 'q' f8 = 'r' )
+     (  f1 = '0' f2 = '1' f3 = '4' f4 = '5' f5 = 'h' f6 = 'j' f7 = 'n' f8 = 'p' )
+    ).
+
+    mt_neighbors_even = value #(
+     (  f1 = 'p' f2 = 'r' f3 = 'x' f4 = 'z' )
+     (  f1 = 'n' f2 = 'q' f3 = 'w' f4 = 'y' )
+     (  f1 = 'j' f2 = 'm' f3 = 't' f4 = 'v' )
+     (  f1 = 'h' f2 = 'k' f3 = 's' f4 = 'u' )
+     (  f1 = '5' f2 = '7' f3 = 'e' f4 = 'g' )
+     (  f1 = '4' f2 = '6' f3 = 'd' f4 = 'f' )
+     (  f1 = '1' f2 = '3' f3 = '9' f4 = 'c' )
+     (  f1 = '0' f2 = '2' f3 = '8' f4 = 'b' )
+    ).
+
   endmethod.
 
 
@@ -162,7 +214,7 @@ class zcl_geohash implementation.
 
     types: numc5 type n length 5.
 
-    data(length) = strlen( i_geo_hash ).
+    data(length) = strlen( geohash ).
 
     if length <= 0.
       return.
@@ -172,13 +224,13 @@ class zcl_geohash implementation.
       length = c_max_hash_length.
     endif.
 
-    data(geo_hash) = to_lower( i_geo_hash ).
+    data(geo_hash_internal) = to_lower( geohash ).
 
     data(hash_index) = 0.
 
     do length times.
 
-      data(base32) = geo_hash+hash_index(1).
+      data(base32) = geo_hash_internal+hash_index(1).
 
       data(decimals) = value #( mt_base32_code2[ base32 = base32 ]-decimals optional ).
 
@@ -230,7 +282,7 @@ class zcl_geohash implementation.
         importing
           e_left  = longitude_left
           e_right = longitude_right
-          e_tude  = e_longitude
+          e_tude  = longitude
       ).
 
       longitude_index = longitude_index + 1.
@@ -251,7 +303,7 @@ class zcl_geohash implementation.
         importing
           e_left  = latitude_left
           e_right = latitude_right
-          e_tude  = e_latitude
+          e_tude  = latitude
       ).
 
       latitude_index = latitude_index + 1.
@@ -280,14 +332,14 @@ class zcl_geohash implementation.
 
   method encode.
 
-    if i_length < 1.
+    if length < 1.
       return.
     endif.
 
-    if i_length > c_max_hash_length.
+    if length > c_max_hash_length.
       data(hash_length) = c_max_hash_length.
     else.
-      hash_length = i_length.
+      hash_length = length.
     endif.
 
     data(loop_times) = hash_length * 5 / 2 + 1.
@@ -307,7 +359,7 @@ class zcl_geohash implementation.
         exporting
           i_left  = longitude_left
           i_right = longitude_right
-          i_tude  = i_longitude
+          i_tude  = longitude
         importing
           e_left  = longitude_left
           e_right = longitude_right
@@ -318,7 +370,7 @@ class zcl_geohash implementation.
         exporting
           i_left  = latitude_left
           i_right = latitude_right
-          i_tude  = i_latitude
+          i_tude  = latitude
         importing
           e_left  = latitude_left
           e_right = latitude_right
@@ -365,6 +417,98 @@ class zcl_geohash implementation.
 
   method get_code_neighbor.
 
+    data(table_descr) = cast cl_abap_tabledescr( cl_abap_tabledescr=>describe_by_data( i_table ) ).
+
+    data(column_count) = lines(
+      cast cl_abap_structdescr( table_descr->get_table_line_type( ) )->components ).
+
+
+    data(col_index) = 1.
+
+    loop at i_table assigning field-symbol(<line>).
+
+      data(row_index) = sy-tabix.
+
+      col_index = 1.
+
+      while col_index <= column_count.
+
+        assign component col_index of structure <line> to field-symbol(<field>).
+        if sy-subrc = 0.
+          if <field> = i_member.
+            data(found) = abap_true.
+            exit.
+          endif.
+        endif.
+
+        col_index = col_index + 1.
+
+      endwhile.
+
+      if found = abap_true.
+        exit.
+      endif.
+
+    endloop.
+
+    if found = abap_false.
+      return.
+    endif.
+
+
+    types: begin of ty_direction,
+             row type i,
+             col type i,
+           end of ty_direction.
+
+    data: direction_index_table type standard table of ty_direction.
+
+    direction_index_table = value #(
+      ( row = -1 col =  -1  )
+      ( row = -1 col =   0  )
+      ( row = -1 col =  +1  )
+      ( row =  0 col =  -1  )
+      ( row =  0 col =  +1  )
+      ( row =  1 col =  -1  )
+      ( row =  1 col =   0  )
+      ( row =  1 col =  +1  )
+    ).
+
+    data(row_count) = lines( i_table ).
+
+    loop at direction_index_table assigning field-symbol(<direction_index>).
+
+      data(row_result) = get_index( index = row_index offset = <direction_index>-row max_index = row_count ).
+      data(col_result) = get_index( index = col_index offset = <direction_index>-col max_index = column_count ).
+
+      read table i_table assigning <line> index row_result.
+      if sy-subrc = 0.
+        assign component col_result of structure <line> to <field>.
+        if sy-subrc = 0.
+          r_table = value #( base r_table ( hash = <field> ) ).
+        endif.
+      endif.
+
+    endloop.
+
+  endmethod.
+
+
+  method get_index.
+
+    if abs( offset ) >= max_index.
+      return.
+    endif.
+
+    r_index = index + offset.
+
+    if r_index > max_index .
+      r_index = offset.
+    endif.
+
+    if r_index <= 0.
+      r_index = max_index + r_index.
+    endif.
 
   endmethod.
 
@@ -384,5 +528,34 @@ class zcl_geohash implementation.
     endif.
 
   endmethod.
-  
+
+
+  method neighbors.
+
+    if geohash is initial.
+      return.
+    endif.
+
+    data(geohash_internal) = to_lower( geohash ).
+
+    data(length) = strlen( geohash_internal ).
+
+    data(offset) = length - 1.
+
+    data(suffix) = geohash_internal+offset(1).
+
+    if length mod 2 = 0.
+      data(code_table) = get_code_neighbor( i_table = mt_neighbors_even i_member = suffix ).
+    else.
+      code_table       = get_code_neighbor( i_table = mt_neighbors_odd  i_member = suffix ).
+    endif.
+
+    data(prefix) = geohash_internal(offset).
+
+    loop at code_table assigning field-symbol(<hash>).
+      neighbors = value #( base neighbors ( hash = prefix && <hash>-hash ) ).
+    endloop.
+
+  endmethod.
+
 endclass.
