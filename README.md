@@ -9,7 +9,7 @@ ABAP Version: 740 or higher
       latitude  = '28.4751600000'
       length    = 11
     ).
-Default value of i_length is 8.
+Default value of length is 8.
 
 ## Decoding
     zcl_geohash=>decode(
