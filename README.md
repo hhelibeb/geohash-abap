@@ -1,25 +1,27 @@
 # geohash-abap
 Geohash utitlies in ABAP
-
+ABAP Version: 740 or higher
 
 ## Encoding
     data(hash) = zcl_geohash=>encode(
-      i_longitude = '119.9314500000'
-      i_latitude  = '28.4751600000'
-      i_length    = 11
+      longitude = '119.9314500000'
+      latitude  = '28.4751600000'
+      length    = 11
     ).
 Default value of i_length is 8.
 
 ## Decoding
     zcl_geohash=>decode(
       exporting
-        i_geo_hash = hash
+        geohash  = hash
       importing
-        e_longitude = data(longitude)
-        e_latitude  = data(latitude)
+        longitude = data(longitude)
+        latitude  = data(latitude)
     ).
+## Neighbors
+    data(neighbors) = zcl_geohash=>neighbors( 'wtj3cper' ).
 ## TODO
-- [ ] Get neighbors.
+- [x] Get neighbors.
 - [ ] Unit testing.
 - [ ] Distance.
 - [ ] Hash validation.
