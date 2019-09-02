@@ -13,7 +13,7 @@ Default value of i_length is 8.
 ## Decoding
     zcl_geohash=>decode(
       exporting
-        geohash  = hash
+        geohash   = hash
       importing
         longitude = data(longitude)
         latitude  = data(latitude)
