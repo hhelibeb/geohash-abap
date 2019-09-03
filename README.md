@@ -21,10 +21,12 @@ Default value of length is 8.
     ).
 ## Neighbors
     data(neighbors) = zcl_geohash=>neighbors( 'wtj3cper' ).
+## Hash Validation    
+    data(valid) = zcl_geohash=>validate( 'wtj3cper' ).
 ## TODO
 - [x] Get neighbors.
 - [ ] Unit testing.
 - [ ] Distance.
-- [ ] Hash validation.
+- [x] Hash validation.
 - [ ] Class split.
 
