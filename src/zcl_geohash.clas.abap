@@ -34,7 +34,9 @@ class zcl_geohash definition
     class-methods neighbors importing geohash          type string
                             returning value(neighbors) type ty_hash_t.
 
-*  protected section.
+    class-methods validate importing geohash      type string
+                           returning value(valid) type abap_bool.
+
   private section.
 
     types:
@@ -558,4 +560,36 @@ class zcl_geohash implementation.
 
   endmethod.
 
+
+  method validate.
+
+    valid = abap_false.
+
+    if geohash is initial .
+      return.
+    endif.
+
+    if strlen( geohash ) > c_max_hash_length.
+      return.
+    endif.
+
+    data(geohash_internal) = to_lower( geohash ).
+
+    data(geohash_index) = 0.
+
+    do strlen( geohash ) times.
+
+      data(hash) = geohash_internal+geohash_index(1).
+
+      if not line_exists( mt_base32_code2[ base32 = hash ] ).
+        return.
+      endif.
+
+      geohash_index = geohash_index + 1.
+
+    enddo.
+
+    valid = abap_true.
+
+  endmethod.
 endclass.
