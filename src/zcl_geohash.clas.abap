@@ -5,12 +5,12 @@ class zcl_geohash definition
 
   public section.
 
-
-    types: begin of ty_hash,
-             hash type string,
-           end of ty_hash.
-    types: ty_hash_t type standard table of ty_hash with empty key.
-
+    types:
+      begin of ty_hash,
+        hash type string,
+      end of ty_hash .
+    types:
+      ty_hash_t type standard table of ty_hash with empty key .
     types:
       ty_tude type p length 16 decimals 12 .
 
@@ -30,13 +30,16 @@ class zcl_geohash definition
       exporting
         !longitude type ty_tude
         !latitude  type ty_tude .
-
-    class-methods neighbors importing geohash          type string
-                            returning value(neighbors) type ty_hash_t.
-
-    class-methods validate importing geohash      type string
-                           returning value(valid) type abap_bool.
-
+    class-methods neighbors
+      importing
+        !geohash         type string
+      returning
+        value(neighbors) type ty_hash_t .
+    class-methods validate
+      importing
+        !geohash     type string
+      returning
+        value(valid) type abap_bool .
   private section.
 
     types:
@@ -68,6 +71,23 @@ class zcl_geohash definition
              f4 type string,
            end of ty_neighbors_even.
     types: ty_neighbors_even_t type standard table of ty_neighbors_even with empty key.
+
+    types: begin of ty_direction,
+             row type i,
+             col type i,
+           end of ty_direction.
+
+    types: begin of ty_neighbor_code_result,
+             out_of_bounds type abap_bool,
+             code          type string,
+             direction     type ty_direction,
+           end of ty_neighbor_code_result.
+
+    types: begin of ty_index_result,
+             out_of_bounds type abap_bool,
+             index         type i,
+             direction     type i,
+           end of ty_index_result.
 
     class-data mt_base32_code1 type ty_base32_t1 .
     class-data mt_base32_code2 type ty_base32_t2 .
@@ -112,19 +132,30 @@ class zcl_geohash definition
         !e_right type ty_tude
         !e_tude  type ty_tude .
 
-    class-methods: get_index importing index          type i
-                                       offset         type i
-                                       max_index      type i
-                             returning value(r_index) type i.
-    class-methods: get_code_neighbor importing i_table        type standard table
-                                               i_member       type string
-                                     returning value(r_table) type ty_hash_t.
+    class-methods: calc_index importing index         type i
+                                        offset        type i
+                                        max_index     type i
+                              returning value(result) type ty_index_result.
 
-endclass.
+    class-methods: get_index importing base_table type standard table
+                                       member     type string
+                             exporting col_index  type i
+                                       row_index  type i
+                                       col_number type i
+                                       row_number type i.
 
 
 
-class zcl_geohash implementation.
+    class-methods: get_neighbors_suffix importing base_table    type standard table
+                                                  member        type string
+                                                  direction     type ty_direction
+                                        returning value(result) type ty_neighbor_code_result.
+
+ENDCLASS.
+
+
+
+CLASS ZCL_GEOHASH IMPLEMENTATION.
 
 
   method bin_to_dec.
@@ -148,6 +179,29 @@ class zcl_geohash implementation.
       l_index = l_index + 1.
 
     enddo.
+
+  endmethod.
+
+
+  method calc_index.
+
+    if abs( offset ) >= max_index.
+      return.
+    endif.
+
+    result-index = index + offset.
+
+    if result-index > max_index .
+      result-index         = offset.
+      result-out_of_bounds = abap_true.
+      result-direction     = 1.
+    endif.
+
+    if result-index <= 0.
+      result-index         = max_index + result-index.
+      result-out_of_bounds = abap_true.
+      result-direction     = -1.
+    endif.
 
   endmethod.
 
@@ -312,6 +366,9 @@ class zcl_geohash implementation.
 
     enddo.
 
+    longitude = round( val = longitude dec = 8 mode = cl_abap_math=>round_half_up ).
+    latitude  = round( val = latitude  dec = 8 mode = cl_abap_math=>round_half_up ).
+
   endmethod.
 
 
@@ -417,27 +474,24 @@ class zcl_geohash implementation.
   endmethod.
 
 
-  method get_code_neighbor.
+  method get_index.
 
-    data(table_descr) = cast cl_abap_tabledescr( cl_abap_tabledescr=>describe_by_data( i_table ) ).
+    data(table_descr) = cast cl_abap_tabledescr( cl_abap_tabledescr=>describe_by_data( base_table ) ).
 
-    data(column_count) = lines(
+    col_number = lines(
       cast cl_abap_structdescr( table_descr->get_table_line_type( ) )->components ).
 
+    loop at base_table assigning field-symbol(<line>).
 
-    data(col_index) = 1.
-
-    loop at i_table assigning field-symbol(<line>).
-
-      data(row_index) = sy-tabix.
+      row_index = sy-tabix.
 
       col_index = 1.
 
-      while col_index <= column_count.
+      while col_index <= col_number.
 
         assign component col_index of structure <line> to field-symbol(<field>).
         if sy-subrc = 0.
-          if <field> = i_member.
+          if <field> = member.
             data(found) = abap_true.
             exit.
           endif.
@@ -453,63 +507,46 @@ class zcl_geohash implementation.
 
     endloop.
 
+    row_number = lines( base_table ).
+
     if found = abap_false.
+      clear: col_index,
+             row_index.
       return.
     endif.
-
-
-    types: begin of ty_direction,
-             row type i,
-             col type i,
-           end of ty_direction.
-
-    data: direction_index_table type standard table of ty_direction.
-
-    direction_index_table = value #(
-      ( row = -1 col =  -1  )
-      ( row = -1 col =   0  )
-      ( row = -1 col =  +1  )
-      ( row =  0 col =  -1  )
-      ( row =  0 col =  +1  )
-      ( row =  1 col =  -1  )
-      ( row =  1 col =   0  )
-      ( row =  1 col =  +1  )
-    ).
-
-    data(row_count) = lines( i_table ).
-
-    loop at direction_index_table assigning field-symbol(<direction_index>).
-
-      data(row_result) = get_index( index = row_index offset = <direction_index>-row max_index = row_count ).
-      data(col_result) = get_index( index = col_index offset = <direction_index>-col max_index = column_count ).
-
-      read table i_table assigning <line> index row_result.
-      if sy-subrc = 0.
-        assign component col_result of structure <line> to <field>.
-        if sy-subrc = 0.
-          r_table = value #( base r_table ( hash = <field> ) ).
-        endif.
-      endif.
-
-    endloop.
 
   endmethod.
 
 
-  method get_index.
+  method get_neighbors_suffix.
 
-    if abs( offset ) >= max_index.
-      return.
+    get_index(
+      exporting
+        base_table = base_table
+        member     = member
+      importing
+        col_index   = data(col_index)
+        row_index   = data(row_index)
+        col_number  = data(col_number)
+        row_number  = data(row_number)
+    ).
+
+
+    data(row_result) = calc_index( index = row_index offset = direction-row max_index = row_number ).
+    data(col_result) = calc_index( index = col_index offset = direction-col max_index = col_number ).
+
+    read table base_table assigning field-symbol(<line>) index row_result-index.
+    if sy-subrc = 0.
+      assign component col_result-index of structure <line> to field-symbol(<field>).
+      if sy-subrc = 0.
+        result-code = <field> .
+      endif.
     endif.
 
-    r_index = index + offset.
-
-    if r_index > max_index .
-      r_index = offset.
-    endif.
-
-    if r_index <= 0.
-      r_index = max_index + r_index.
+    if col_result-out_of_bounds = abap_true or row_result-out_of_bounds = abap_true.
+      result-out_of_bounds = abap_true.
+      result-direction-row = row_result-direction.
+      result-direction-col = col_result-direction.
     endif.
 
   endmethod.
@@ -538,24 +575,70 @@ class zcl_geohash implementation.
       return.
     endif.
 
+    data: direction_index_table type standard table of ty_direction.
+
+    direction_index_table = value #(
+      ( row = -1 col =  -1  )
+      ( row = -1 col =   0  )
+      ( row = -1 col =  +1  )
+      ( row =  0 col =  -1  )
+      ( row =  0 col =  +1  )
+      ( row =  1 col =  -1  )
+      ( row =  1 col =   0  )
+      ( row =  1 col =  +1  )
+    ).
+
     data(geohash_internal) = to_lower( geohash ).
 
-    data(length) = strlen( geohash_internal ).
+    data(hash_length) = strlen( geohash_internal ).
 
-    data(offset) = length - 1.
+    loop at direction_index_table assigning field-symbol(<direction>).
 
-    data(suffix) = geohash_internal+offset(1).
+      data(hash_index) = hash_length.
 
-    if length mod 2 = 0.
-      data(code_table) = get_code_neighbor( i_table = mt_neighbors_even i_member = suffix ).
-    else.
-      code_table       = get_code_neighbor( i_table = mt_neighbors_odd  i_member = suffix ).
-    endif.
+      do hash_length times.
 
-    data(prefix) = geohash_internal(offset).
+        hash_index = hash_index - 1.
 
-    loop at code_table assigning field-symbol(<hash>).
-      neighbors = value #( base neighbors ( hash = prefix && <hash>-hash ) ).
+        data(hash_code) = geohash_internal+hash_index(1).
+
+        data: result type ty_neighbor_code_result.
+
+        data(direction) = cond #(
+          when result-out_of_bounds = abap_true then result-direction
+          else                                       <direction>
+        ).
+
+        if hash_index mod 2 = 0.
+          result = get_neighbors_suffix(
+            base_table = mt_neighbors_odd
+            member     = hash_code
+            direction  = direction
+          ).
+        else.
+          result = get_neighbors_suffix(
+            base_table = mt_neighbors_even
+            member     = hash_code
+            direction  = direction
+          ).
+        endif.
+
+        data: suffix type string.
+
+        suffix = suffix && result-code.
+
+        if result-out_of_bounds = abap_false.
+          exit.
+        endif.
+
+      enddo.
+
+      data(neighbor) = geohash_internal(hash_index) && reverse( suffix ).
+
+      neighbors = value #( base neighbors ( hash = neighbor ) ).
+
+      clear: suffix.
+
     endloop.
 
   endmethod.
@@ -592,4 +675,4 @@ class zcl_geohash implementation.
     valid = abap_true.
 
   endmethod.
-endclass.
+ENDCLASS.
