@@ -27,7 +27,6 @@ Default value of length is 8.
 ## TODO
 - [x] Get neighbors.
 - [x] Unit testing.
-~~Distance.~~
 - [x] Hash validation.
 - [ ] Class split.
 
