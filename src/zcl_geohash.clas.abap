@@ -583,9 +583,9 @@ CLASS ZCL_GEOHASH IMPLEMENTATION.
       ( row = -1 col =  +1  )
       ( row =  0 col =  -1  )
       ( row =  0 col =  +1  )
-      ( row =  1 col =  -1  )
-      ( row =  1 col =   0  )
-      ( row =  1 col =  +1  )
+      ( row = +1 col =  -1  )
+      ( row = +1 col =   0  )
+      ( row = +1 col =  +1  )
     ).
 
     data(geohash_internal) = to_lower( geohash ).
